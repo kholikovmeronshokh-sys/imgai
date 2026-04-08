@@ -1,0 +1,12 @@
+{
+  "name": "uzart-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Uzbek prompt image generation app with Hugging Face and daily limits.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.13.15"
+  }
+}
