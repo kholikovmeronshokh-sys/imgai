@@ -1,4 +1,4 @@
-name = "imgai"
+name = "rasmboz-ai"
 main = "src/worker.js"
 compatibility_date = "2026-04-08"
 
