@@ -12,10 +12,7 @@ const resultImage = document.getElementById("resultImage");
 const downloadLink = document.getElementById("downloadLink");
 
 let serverReady = false;
-let currentUsage = {
-  remaining: 2,
-  resetAt: null,
-};
+let currentUsage = normalizeUsage(readUsage());
 
 boot();
 generateButton.addEventListener("click", handleGenerate);
@@ -31,20 +28,6 @@ async function boot() {
     if (!data.configured) {
       statusText.textContent = ".env ichida HF_TOKEN hali sozlanmagan.";
       return;
-    }
-
-    const usageResponse = await fetch("/api/usage", {
-      headers: {
-        "x-client-id": clientId,
-      },
-    });
-    const usageData = await usageResponse.json();
-    if (usageResponse.ok) {
-      currentUsage = {
-        remaining: typeof usageData.remaining === "number" ? usageData.remaining : 2,
-        resetAt: usageData.resetAt || null,
-      };
-      renderUsage(currentUsage);
     }
 
     statusText.textContent = "Server tayyor. Uzbekcha prompt yozishingiz mumkin.";
@@ -91,14 +74,6 @@ async function handleGenerate() {
     const data = await response.json();
 
     if (!response.ok) {
-      if (typeof data.remaining === "number" && data.resetAt) {
-        currentUsage = {
-          remaining: data.remaining,
-          resetAt: data.resetAt,
-        };
-        renderUsage(currentUsage);
-      }
-
       if (data.reason === "quota_exceeded") {
         helperText.textContent =
           "Bu sayt limiti emas. Hozir HF quota yoki provider cheklovi bor.";
@@ -117,10 +92,8 @@ async function handleGenerate() {
     downloadLink.href = imageUrl;
     downloadLink.classList.remove("hidden");
 
-    currentUsage = {
-      remaining: data.remaining,
-      resetAt: data.resetAt,
-    };
+    currentUsage = consumeUsage(currentUsage);
+    saveUsage(currentUsage);
     renderUsage(currentUsage);
 
     statusText.textContent = "Rasm tayyor bo'ldi.";
@@ -151,6 +124,50 @@ function getOrCreateClientId() {
   const id = self.crypto.randomUUID();
   localStorage.setItem(storageKey, id);
   return id;
+}
+
+function readUsage() {
+  try {
+    return JSON.parse(localStorage.getItem("rasmboz-usage") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveUsage(usage) {
+  localStorage.setItem("rasmboz-usage", JSON.stringify(usage));
+}
+
+function normalizeUsage(usage) {
+  const now = Date.now();
+  if (!usage || !usage.resetAt || now >= usage.resetAt) {
+    return {
+      remaining: 2,
+      resetAt: null,
+    };
+  }
+
+  return {
+    remaining: Math.max(0, Number(usage.remaining) || 0),
+    resetAt: usage.resetAt,
+  };
+}
+
+function consumeUsage(usage) {
+  const normalized = normalizeUsage(usage);
+  const now = Date.now();
+
+  if (!normalized.resetAt) {
+    return {
+      remaining: 1,
+      resetAt: now + 24 * 60 * 60 * 1000,
+    };
+  }
+
+  return {
+    remaining: Math.max(0, normalized.remaining - 1),
+    resetAt: normalized.resetAt,
+  };
 }
 
 function renderUsage(usage) {

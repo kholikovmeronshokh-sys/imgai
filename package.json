@@ -4,9 +4,7 @@
   "private": true,
   "description": "Uzbek prompt image generation app with Hugging Face and daily limits.",
   "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "@huggingface/inference": "^4.13.15"
+    "start": "npx wrangler pages dev public",
+    "dev": "npx wrangler pages dev public"
   }
 }
