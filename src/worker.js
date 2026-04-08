@@ -1,15 +1,36 @@
 const DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell";
 const DEFAULT_PROVIDER = "hf-inference";
 
-export async function onRequestPost(context) {
-  const token = context.env.HF_TOKEN;
-  if (!token) {
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/api/status") {
+      return json({
+        ok: true,
+        configured: Boolean(env.HF_TOKEN),
+        limit: 2,
+        provider: "huggingface",
+        model: env.HF_IMAGE_MODEL || DEFAULT_MODEL,
+      });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/generate") {
+      return handleGenerate(request, env);
+    }
+
+    return env.ASSETS.fetch(request);
+  },
+};
+
+async function handleGenerate(request, env) {
+  if (!env.HF_TOKEN) {
     return json({ error: "HF_TOKEN topilmadi. Cloudflare environment variable sozlang." }, 500);
   }
 
   let payload;
   try {
-    payload = await context.request.json();
+    payload = await request.json();
   } catch {
     return json({ error: "JSON noto'g'ri formatda" }, 400);
   }
@@ -19,11 +40,14 @@ export async function onRequestPost(context) {
     return json({ error: "Prompt kiriting" }, 400);
   }
 
-  const model = context.env.HF_IMAGE_MODEL || DEFAULT_MODEL;
-  const provider = context.env.HF_PROVIDER || DEFAULT_PROVIDER;
-
   try {
-    const imageBase64 = await fetchHuggingFaceImage({ token, model, provider, prompt });
+    const imageBase64 = await fetchHuggingFaceImage({
+      token: env.HF_TOKEN,
+      model: env.HF_IMAGE_MODEL || DEFAULT_MODEL,
+      provider: env.HF_PROVIDER || DEFAULT_PROVIDER,
+      prompt,
+    });
+
     return json({
       imageBase64,
       text: "Rasm Hugging Face orqali yaratildi.",
@@ -42,7 +66,7 @@ export async function onRequestPost(context) {
 }
 
 async function fetchHuggingFaceImage({ token, model, provider, prompt }) {
-  const response = await fetch("https://router.huggingface.co/hf-inference/models/" + model, {
+  const response = await fetch(`https://router.huggingface.co/hf-inference/models/${model}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -2,15 +2,16 @@
 
 Uzbekcha prompt bilan AI rasm generatsiya qiladigan oddiy va chiroyli sayt.
 
-## Cloudflare Pages Deploy
+## Cloudflare Deploy
 
-1. GitHub repo'ni Cloudflare Pages'ga ulang.
+1. GitHub repo'ni Cloudflare Workers'ga ulang.
 2. Build command ni bo'sh qoldiring.
-3. Build output directory: `public`
-4. Environment Variables ichiga quyidagilarni qo'shing:
-5. `HF_TOKEN=...`
-6. `HF_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell`
-7. `HF_PROVIDER=hf-inference`
+3. Deploy command: `npx wrangler deploy`
+4. Path: `/`
+5. Environment Variables ichiga quyidagilarni qo'shing:
+6. `HF_TOKEN=...`
+7. `HF_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell`
+8. `HF_PROVIDER=hf-inference`
 
 ## Lokal Ishga Tushirish
 
